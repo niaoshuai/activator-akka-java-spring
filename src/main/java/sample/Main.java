@@ -2,16 +2,18 @@ package sample;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import static akka.pattern.Patterns.ask;
 import akka.util.Timeout;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import sample.CountingActor.Count;
 import sample.CountingActor.Get;
-import static sample.SpringExtension.SpringExtProvider;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
+
 import java.util.concurrent.TimeUnit;
+
+import static akka.pattern.Patterns.ask;
+import static sample.SpringExtension.SpringExtProvider;
 
 /**
  * A main class to start up the application.
@@ -20,7 +22,7 @@ public class Main {
   public static void main(String[] args) throws Exception {
     // create a spring context and scan the classes
     AnnotationConfigApplicationContext ctx =
-      new AnnotationConfigApplicationContext();
+            new AnnotationConfigApplicationContext();
     ctx.scan("sample");
     ctx.refresh();
 
@@ -28,17 +30,19 @@ public class Main {
     ActorSystem system = ctx.getBean(ActorSystem.class);
     // use the Spring Extension to create props for a named actor bean
     ActorRef counter = system.actorOf(
-      SpringExtProvider.get(system).props("CountingActor"), "counter");
+            SpringExtProvider.get(system).props("CountingActor"), "counter");
 
-    // tell it to count three times
-    counter.tell(new Count(), null);
-    counter.tell(new Count(), null);
-    counter.tell(new Count(), null);
+
+    long begin = System.currentTimeMillis();
+    for (int i = 0; i < 1000000; i++) {
+      counter.tell(new Count(), null);
+    }
+    System.out.println("100万 演员消息耗费时间 = " + (System.currentTimeMillis() - begin));
 
     // print the result
-    FiniteDuration duration = FiniteDuration.create(3, TimeUnit.SECONDS);
+    FiniteDuration duration = FiniteDuration.create(1, TimeUnit.SECONDS);
     Future<Object> result = ask(counter, new Get(),
-      Timeout.durationToTimeout(duration));
+            Timeout.durationToTimeout(duration));
     try {
       System.out.println("Got back " + Await.result(result, duration));
     } catch (Exception e) {
